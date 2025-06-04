@@ -164,7 +164,7 @@ roc_auc_list = []
 #Contains probabilities and predictions for each model
 preds_df_all = pd.DataFrame()
 
-for idx, clf in enumerate((rnd_clf, xgb_clf, svm_clf, voting_clf, knn_clf, grd_clf)):
+for idx, clf in enumerate((rnd_clf, xgb_clf, voting_clf, log_clf)):
     model_list.append(clf.__class__.__name__)
     
     clf.fit(x_train_st, np.ravel(y_train))
@@ -213,3 +213,46 @@ for idx, clf in enumerate((rnd_clf, xgb_clf, svm_clf, voting_clf, knn_clf, grd_c
     thresholds_list.append(thresholds) 
     roc_auc_list.append(roc_auc) 
     
+"""
+Random Forest Classifier:
+f1-score non-default: 0.96
+f1-score default: 0.82
+accuracy: 0.93
+XGB Classifier:
+f1-score non-default: 0.93
+f1-score default: 0.74
+accuracy: 0.90
+Voting Classifier:
+f1-score non-default: 0.95
+f1-score default: 0.79
+accuracy: 0.92
+Logistic Regression:
+f1-score non-default: 0.91
+f1-score default: 0.61
+accuracy: .86
+"""
+
+plt.figure(figsize = (12,8))
+
+for idx in range(len(model_list)):
+    plt.plot(fallout_list[idx], sensitivity_list[idx], color = plotting_colors[idx],
+             linewidth = 2.5, label = f'{model_list[idx]} (AUC: {roc_auc_list[idx]:.2f})')
+    
+#Plot the diagnol line
+plt.plot([0,1], [0,1], linestyle = '--', color = 'black', label = 'Random Classifier')
+plt.title("ROC Curve Comparison for Different Models", fontsize=18, fontweight='bold')
+plt.xlabel('Fall-out (False Positive Rate)', fontsize=14)
+plt.ylabel('Sensitivity (True Positive Rate)', fontsize=14)
+
+plt.grid(True)
+
+plt.legend(loc='lower right', fontsize=12)
+
+plt.tight_layout()
+
+plt.show()
+
+"""
+Voting Classifier and Random Forest Classifier stand out as the two best models.
+XGB would've done better than those two if all the categorical columns had been one-hot encoded. 
+"""

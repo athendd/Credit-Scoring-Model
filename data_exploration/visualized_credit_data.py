@@ -1,8 +1,10 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.stats import chi2_contingency
+import scipy.stats
 
-df = pd.read_csv('C:/Users/thynnea/OneDrive - Delsys Inc/Documents/GitHub/Credit-Scoring-Model/dataset/german_credit_dataset.csv')
+df = pd.read_csv('german_credit_dataset.csv')
 
 #credit risk 1 is good and 0 is bad
 
@@ -103,6 +105,7 @@ property:
     
 other installment plans: no values for bank
     none: under 140
+    bank: around 50
     stores: over 40
 
 housing:
@@ -124,6 +127,8 @@ foreign worker:
     yes: under 1000
     no: under 50
 """
+
+"""
 for col in df_non_numerical.columns:
     df_non_numerical[col].value_counts().plot(kind='bar')
     plt.title(f"Distribution of {col}")
@@ -131,6 +136,7 @@ for col in df_non_numerical.columns:
     plt.ylabel("Value Counts")
     plt.xticks(rotation = 0)
     plt.show()
+"""
 
 
 
@@ -153,6 +159,8 @@ self employed. highly skilled and skilled employee are seen as very good credit 
 Having a telephone is seen as a better credit risk than not having one. 
 Non foreign workers are seen as better credit risk than foreign workers. 
 """
+
+"""
 for col in df_non_numerical.columns:
     counts = df_non_numerical.groupby([col, 'credit_risk']).size().unstack(fill_value = 0)
     counts.plot(kind = 'bar', figsize = (8, 6))
@@ -161,3 +169,63 @@ for col in df_non_numerical.columns:
     plt.legend()
     plt.ylabel("Count")
     plt.show()
+"""
+
+significance_threshold = 0.05
+
+"""
+Chi square test to compare categorical columns to credit_risk
+1. Status_of_existing_checking_accountL 123.7
+2. Credit_history: 61.6
+3. Savings_account/bonds: 36
+4. Purpose: 33.3
+5. Property: 23.7
+6. Present_employment_since: 18.3
+6. Housing: 18.1
+7. Other_installment_plans: 12.8
+8. Personal_status_and_sex: 9.6
+9. Other_debators/guarantors: 6.6
+10. foreign_workers: 5.8
+"""
+
+"""
+df_non_numerical['credit_risk'] = df_non_numerical['credit_risk'].map({1: '1', 0: '0'})
+
+
+chi_test_results = {}
+
+for col in df_non_numerical:
+    contingency_table = pd.crosstab(df_non_numerical[col], df_non_numerical['credit_risk'])
+
+    chi, p, df, expected = chi2_contingency(contingency_table)
+    
+    if p < significance_threshold:
+        chi_test_results[col] = chi
+        
+sorted_dic = dict(sorted(chi_test_results.items(), key = lambda item: item[1], reverse = True))
+print(sorted_dic)
+"""
+
+"""
+Hypothesis Testing to compare numerical variables to credit_risk
+1. Duration_in_month: 6.9
+2. Credit_amount: 4.9
+3. Installment_rate_in_percentage_of_dispoable_income: 2.2
+4. Age_in_years: -2.8
+"""
+
+hypothesis_test_results = {}
+    
+for col in df_numerical.columns:
+    group_0 = np.array(df_numerical[df_numerical['credit_risk'] == 0][col])
+    group_1 = np.array(df_numerical[df_numerical['credit_risk'] == 1][col])
+    
+    t_statistic, p_value = scipy.stats.ttest_ind(group_0, group_1)
+    
+    if p_value < significance_threshold:
+        hypothesis_test_results[col] = t_statistic
+        
+sorted_hypothesis_test_results = dict(sorted(hypothesis_test_results.items(), key = lambda item: item[1], reverse = True))
+print(sorted_hypothesis_test_results)
+
+

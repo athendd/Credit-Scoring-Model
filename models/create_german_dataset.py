@@ -14,14 +14,14 @@ Telephone_dic = {'A191': 'none', 'A192': 'yes'}
 foreign_worker_dic = {'A201': 'Y', 'A202': 'N'}
 job_dic = {'A171': 'unemployed', 'A172': 'unskilled', 'A173': 'skilled employee', 'A174': 'self_employed/highly qualified employee'}
 housing_dic = {'A151': 'rent', 'A152': 'own', 'A153': 'for free'}
-installment_plans_dic = {'A141': 'bank', 'A142': 'stores', 'A141': 'none'}
+installment_plans_dic = {'A141': 'bank', 'A142': 'stores', 'A143': 'none'}
 property_dic = {'A121': 'real estate', 'A122': 'building society saving agreement/life insurance',
-                'A123': 'car or other', 'A124': 'unkown/no property'}
+                'A123': 'car or other', 'A124': 'unknown/no property'}
 other_debators_dic = {'A101': 'none', 'A102': 'co-applicant', 'A103': 'guarantor'}
-status_sex_dic = {'A91': 'male : divocred/separated', 'A92': 'female : divorced/separated/married',
+status_sex_dic = {'A91': 'male : divorced/separated', 'A92': 'female : divorced/separated/married',
                   'A93': 'male : single', 'A94': 'male : married/widowed', 'A95': 'female : single'}
 employment_dic = {'A71': 'unemployed', 'A72':'less than 1 year', 'A73': 'less than 4 years', 'A74': 'less than 7 years', 'A75': 'greater than 7 years'}
-saving_accounts_dic = {'A61': 'less than 116', 'A62': 'less than 291', 'A63': 'less than 582', 'A64': 'greater than 582', 'A65': 'unkown/no savings account'}
+saving_accounts_dic = {'A61': 'less than 116', 'A62': 'less than 291', 'A63': 'less than 582', 'A64': 'greater than 582', 'A65': 'unknown/no savings account'}
 purpose_dic = {'A40': 'new car', 'A41': 'used car', 'A42': 'furniture/equipment', 'A43': 'radio/television', 'A44': 'domestic appliances',
                'A45': 'repairs', 'A46': 'education', 'A47': 'vacation', 'A48': 'retraining', 'A49': 'business', 'A410': 'others'}
 credit_history_dic = {'A30': 'no credits taken/all credit paid back', 'A31': 'all credits at this bank paid back', 

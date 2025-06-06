@@ -34,14 +34,13 @@ Numer of existing credits at this bank doesn't affect the outcome.
 Number of people being liable to provide maintenance for doesn't affect the outcoe.
 """
 
-"""
 for col in df_numerical.columns:
     df.boxplot(column = col, by = 'credit_risk')
     plt.title(f'Credit Risk vs {col}')
     plt.xlabel("Credit Risk")
     plt.ylabel(col)
     plt.show()
-"""
+
     
 df_non_numerical = df.select_dtypes(exclude = ['number'])
 
@@ -128,7 +127,6 @@ foreign worker:
     no: under 50
 """
 
-"""
 for col in df_non_numerical.columns:
     df_non_numerical[col].value_counts().plot(kind='bar')
     plt.title(f"Distribution of {col}")
@@ -136,9 +134,6 @@ for col in df_non_numerical.columns:
     plt.ylabel("Value Counts")
     plt.xticks(rotation = 0)
     plt.show()
-"""
-
-
 
 df_non_numerical['credit_risk'] = df['credit_risk']
 
@@ -160,7 +155,6 @@ Having a telephone is seen as a better credit risk than not having one.
 Non foreign workers are seen as better credit risk than foreign workers. 
 """
 
-"""
 for col in df_non_numerical.columns:
     counts = df_non_numerical.groupby([col, 'credit_risk']).size().unstack(fill_value = 0)
     counts.plot(kind = 'bar', figsize = (8, 6))
@@ -169,13 +163,12 @@ for col in df_non_numerical.columns:
     plt.legend()
     plt.ylabel("Count")
     plt.show()
-"""
 
 significance_threshold = 0.05
 
 """
 Chi square test to compare categorical columns to credit_risk
-1. Status_of_existing_checking_accountL 123.7
+1. Status_of_existing_checking_account: 123.7
 2. Credit_history: 61.6
 3. Savings_account/bonds: 36
 4. Purpose: 33.3
@@ -188,9 +181,7 @@ Chi square test to compare categorical columns to credit_risk
 10. foreign_workers: 5.8
 """
 
-"""
 df_non_numerical['credit_risk'] = df_non_numerical['credit_risk'].map({1: '1', 0: '0'})
-
 
 chi_test_results = {}
 
@@ -204,10 +195,9 @@ for col in df_non_numerical:
         
 sorted_dic = dict(sorted(chi_test_results.items(), key = lambda item: item[1], reverse = True))
 print(sorted_dic)
-"""
 
 """
-Hypothesis Testing to compare numerical variables to credit_risk
+Two sample t-tests to compare numerical variables to credit_risk
 1. Duration_in_month: 6.9
 2. Credit_amount: 4.9
 3. Installment_rate_in_percentage_of_dispoable_income: 2.2

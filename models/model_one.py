@@ -62,7 +62,6 @@ pd.crosstab(df["loan_status"], df["person_home_ownership"], values = df["person_
 #Removing outliers
 df = df.drop(df[df["person_emp_length"] > 60].index)
 
-
 #Removing more outliers (Did this become there is one that is age 120)
 df = df.drop(df[df["person_age"] > 100].index)
 

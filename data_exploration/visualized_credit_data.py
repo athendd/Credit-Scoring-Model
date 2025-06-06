@@ -177,8 +177,8 @@ Chi square test to compare categorical columns to credit_risk
 6. Housing: 18.1
 7. Other_installment_plans: 12.8
 8. Personal_status_and_sex: 9.6
-9. Other_debators/guarantors: 6.6
-10. foreign_workers: 5.8
+9. Other_debtors/guarantors: 6.6
+10. foreign_worker: 5.8
 """
 
 df_non_numerical['credit_risk'] = df_non_numerical['credit_risk'].map({1: '1', 0: '0'})

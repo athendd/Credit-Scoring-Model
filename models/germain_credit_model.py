@@ -3,10 +3,11 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from sklearn.model_selection import train_test_split, cross_val_score, KFold
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay, RocCurveDisplay, auc, roc_curve, classification_report, precision_recall_fscore_support
+from sklearn.model_selection import train_test_split, cross_val_score, RandomizedSearchCV, StratifiedKFold
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay, RocCurveDisplay, auc, roc_curve, classification_report, precision_recall_fscore_support, make_scorer
 import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
+from imblearn.over_sampling import SMOTE, BorderlineSMOTE, ADASYN
 
 """
 Find outliers using the z score
@@ -87,20 +88,48 @@ x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.3, rando
 #Turns data into a one dimensional array
 y_train_1d = np.ravel(y_train)
 
-#Added a scale position weight since there are way more 1s than 0s in credit_risk
-scale = sum(y_train_1d == 0) / sum(y_train_1d == 1)
+#Resampls data distribution 
+sm = BorderlineSMOTE(random_state = 42)
+x_train_res, y_train_res = sm.fit_resample(x_train, y_train_1d)
 
-xgb_clf = xgb.XGBClassifier(scale_pos_weight = scale)
+count_good = y_train.value_counts().get(1, 0) 
+count_bad = y_train.value_counts().get(0, 0)   
 
-xgb_clf.fit(x_train, y_train_1d)
-y_pred = xgb_clf.predict(x_test)
+scale_pos_weight_value = count_good / count_bad if count_bad > 0 else 1
 
-print(f'Accuracy: {accuracy_score(y_test, y_pred):.4f}')
-print(f'Precision: {precision_score(y_test, y_pred):.4f}')
+params = {
+    "n_estimators": [100, 200, 300],
+    "max_depth": [3, 5, 7, 9],
+    "learning_rate": [0.01, 0.05, 0.1],
+    "subsample": [0.7, 0.8, 1.0],
+    "colsample_bytree": [0.7, 0.8, 1.0],
+    "scale_pos_weight": [scale_pos_weight_value, scale_pos_weight_value * 1.5, scale_pos_weight_value * 0.8],
+    "gamma": [0, 1, 5, 7, 10],
+    "reg_alpha": [0, 0.5, 1],
+    "reg_lambda": [1, 2, 3]
+}
 
-preds = xgb_clf.predict_proba(x_test)
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+f1_scorer_bad_class = make_scorer(f1_score, pos_label = 0, average= 'binary')
+
+search = RandomizedSearchCV(xgb.XGBClassifier(), param_distributions=params, 
+                            n_iter=20, scoring= f1_scorer_bad_class, cv=skf, random_state=42, verbose=1)
+
+search.fit(x_train_res, y_train_res)
+y_pred = search.predict(x_test)
+
+#print(f'Accuracy: {accuracy_score(y_test, y_pred):.4f}')
+#print(f'Precision: {precision_score(y_test, y_pred):.4f}')
+
+preds = search.predict_proba(x_test)
 preds_df = pd.DataFrame(preds[:, 1], columns = ['prob_default'])
-threshold = 0.5
+
+thresholds = [0.1, 0.9, 0.95, 0.8, 0.85, 0.7, 0.75, 0.6, 0.65, 0.5, 0.55, 0.4, 0.45, 0.2, 0.25, 0.3, 0.25, 0.15, 0.05]
+f1_scores = [f1_score(y_test, (preds[:, 1] > t).astype(int)) for t in thresholds]
+threshold = thresholds[np.argmax(f1_scores)]
+
+print(f"Best threshold by F1 score: {threshold:.2f}")
 
 #Assign credit_risk based on threshold
 preds_df['credit_risk'] = preds_df['prob_default'].apply(lambda x: 1 if x > threshold else 0)
@@ -131,46 +160,3 @@ plt.grid(True)
 plt.legend(loc='lower right', fontsize=12)
 plt.tight_layout()
 plt.show()
-
-"""
-Accuracy: 0.7467
-Precision Good: 0.8535
-Precision Bad: 0.54
-F1 Score Good: 0.82
-F1 Score Bad: 0.59
-Performed poorly on bad credit risk vs good credit risk because
-there are a lot more good credit risk rows
-"""
-
-preds_df["prob_default"].hist()
-plt.show()
-
-#Increasing the threshold from 50% to 85%
-threshold_85 = np.quantile(preds_df['prob_default'], 0.85)
-print(threshold_85)
-
-preds_df['credit_risk'] = preds_df['prob_default'].apply(lambda x: 1 if x > threshold_85 else 0)
-print(preds_df['credit_risk'].value_counts())
-
-#Percentage of new loans accepted
-accept_rates = [1.0, 0.95, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2, 0.15, 0.1, 0.05]
-test_pred = pd.DataFrame()
-
-test_pred['prob_default'] = preds_df['prob_default']
-
-thresholds = []
-#Number of accepted loans that are bad credit risk
-bad_rates = []
-num_accepted_loans = []
-avg_loan_amnt = []
-estimated_value = []
-
-for idx, rate in enumerate(accept_rates):
-    thresh = np.quantile(test_pred['prob_default'], rate).round(3)
-    
-    thresholds.append(thresh)
-    
-    preds_df['credit_risk'] = preds_df['prob_default'].apply(lambda x : 1 if x > thresh else 0)
-    
-    accepted_loans = preds_df[preds_df['credit_risk'] == 0]
-    

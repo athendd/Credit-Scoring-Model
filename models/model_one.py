@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import shap
 
 """
 Find outliers using the z score
@@ -80,20 +81,10 @@ df["person_emp_length"] = df["person_emp_length"].fillna(df["person_emp_length"]
 #Dropping rows with null values in interest rate column
 df = df.drop(df[df["loan_int_rate"].isnull()].index)
 
-# *Differed from example in label encoding
+df = df.drop(columns = ['loan_grade'], axis = 1)
 
-#Convert person_home_ownership and loan_intent to numerical data through one-hot encoding
-df = pd.get_dummies(df, columns = ["person_home_ownership", "loan_intent"])
-
-#Converting cb_person_default_on_file to numerical data through binary classification
-df["cb_person_default_on_file_binary"] = (df["cb_person_default_on_file"] == "Y").astype(int)
-
-#Convert loan_grade to numerical data through ordinal encoding
-grade_order = {'A': 7, 'B': 6, 'C': 5, 'D': 4, 'E': 3, 'F': 2, 'G': 1}
-df["loan_grade_ordinal"] = df["loan_grade"].map(grade_order)
-
-#Get rid of all non-numerical columns from the dataset
-df = df.drop(columns = ["cb_person_default_on_file", "loan_grade"])
+#Convert categorical data to numerical data through one-hot encoding
+df = pd.get_dummies(df, columns = ["person_home_ownership", "cb_person_default_on_file", "loan_intent"])
 
 #Checking the correlation between each column in the dataframe
 correlation_matrix = df.corr()
@@ -120,122 +111,60 @@ scaler = StandardScaler()
 x_train_st = scaler.fit_transform(x_train)
 x_test_st = scaler.fit_transform(x_test)
 
-#Creating classifier models
-log_clf = LogisticRegression(solver = 'lbfgs', max_iter = 1000)
-rnd_clf = RandomForestClassifier()
-svm_clf = SVC()
-knn_clf = KNeighborsClassifier()
-grd_clf = GradientBoostingClassifier()
+#Creating classifier model
 xgb_clf = xgb.XGBClassifier()
 
-voting_clf = VotingClassifier(
-    estimators=[
-        ('lr', log_clf), 
-        ('rf', rnd_clf), 
-        ('xgb', xgb_clf)
-    ],
-    voting='soft'
-)
 
 #Fit data to each classification model, flatten y_train into a 1d array, and evaluate each model
-for clf in (log_clf, rnd_clf, svm_clf, knn_clf, grd_clf, xgb_clf, voting_clf):
-    clf.fit(x_train_st, np.ravel(y_train))
-    y_pred = clf.predict(x_test_st)
-    print(f"The {clf.__class__.__name__} has an Accuracy: {accuracy_score(y_test, y_pred):.4f} , and a Precision of: {precision_score(y_test, y_pred):.4f} ")
+xgb_clf.fit(x_train_st, np.ravel(y_train))
+y_pred = xgb_clf.predict(x_test_st)
+print(f"The {xgb_clf.__class__.__name__} has an Accuracy: {accuracy_score(y_test, y_pred):.4f} , and a Precision of: {precision_score(y_test, y_pred):.4f} ")
 
 """
-Logisitc Regression: 0.85, 0.76 which are both good 
-Random Forest Classifier: 0.93, 0.94 which are both great
-SVC: 0.9, 0.93 which are both great
-KNN: 0.88, 0.87 which are both really good
-Gradient Boosting: 0.92, 0.92 which are both great
 XGB: 0.89, 0.84 which are both good
-Voting: 0.92, 0.92 which are both great
-Top models are voting, gradient boosting, random forest, svc, and knn
 """
 
-plotting_colors = ['orange', 'blue', 'green', 'purple', 'red', 'brown']
-model_list = []
-fallout_list = []
-sensitivity_list = []
-thresholds_list = []
-roc_auc_list = []
 #Contains probabilities and predictions for each model
-preds_df_all = pd.DataFrame()
 
-for idx, clf in enumerate((rnd_clf, xgb_clf, voting_clf, log_clf)):
-    model_list.append(clf.__class__.__name__)
     
-    clf.fit(x_train_st, np.ravel(y_train))
-    
-    preds = clf.predict_proba(x_test_st)
-    
-    preds_df = pd.DataFrame(preds[:, 1], columns = ['prob_default'])
-    
-    preds_df_all[f"prob_default {model_list[idx]}"] = preds_df['prob_default'] 
-    
-    threshold = 0.5
-    
-    #Assign loan status based on threshold
-    preds_df["loan_status"] = preds_df["prob_default"].apply(lambda x: 1 if x > threshold else 0)
-    
-    preds_df_all[f"loan_status {model_list[idx]}"] = preds_df['loan_status']
+xgb_clf.fit(x_train_st, np.ravel(y_train))
 
-    #Print each loan status (0 for non default and 1 for default)
-    print(preds_df["loan_status"].value_counts()) 
-    
-    print(f"The Report from {model_list[idx]}:")
-    target_names = ['Non-Default', 'Default'] 
-    print(classification_report(y_test, preds_df["loan_status"], target_names=target_names)) 
+preds = xgb_clf.predict_proba(x_test_st)
 
-    #Confusion matrix of actual vs predicted values
-    cm = confusion_matrix(y_test, preds_df['loan_status']) 
+preds_df = pd.DataFrame(preds[:, 1], columns = ['prob_default'])
 
-    class_names = ['Non-Default', 'Default']
-    
-    #Display the confusion matrix
-    display_cm = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)  # Configure the display
-    display_cm.plot()  
-    plt.show()
-    
-    #Get probabilities of the positive class
-    prob_default = preds[:, 1]
-    
-    #Calculate roc metrics
-    fallout, sensitivity, thresholds = roc_curve(y_test, prob_default)
-    
-    #Calculate area under auc curve
-    roc_auc = roc_auc_score(y_test, prob_default)
-    
-    fallout_list.append(fallout) 
-    sensitivity_list.append(sensitivity) 
-    thresholds_list.append(thresholds) 
-    roc_auc_list.append(roc_auc) 
-    
-"""
-Random Forest Classifier:
-f1-score non-default: 0.96
-f1-score default: 0.82
-accuracy: 0.93
-XGB Classifier:
-f1-score non-default: 0.93
-f1-score default: 0.74
-accuracy: 0.90
-Voting Classifier:
-f1-score non-default: 0.95
-f1-score default: 0.79
-accuracy: 0.92
-Logistic Regression:
-f1-score non-default: 0.91
-f1-score default: 0.61
-accuracy: .86
-"""
+threshold = 0.5
 
-plt.figure(figsize = (12,8))
+#Assign loan status based on threshold
+preds_df["loan_status"] = preds_df["prob_default"].apply(lambda x: 1 if x > threshold else 0)
 
-for idx in range(len(model_list)):
-    plt.plot(fallout_list[idx], sensitivity_list[idx], color = plotting_colors[idx],
-             linewidth = 2.5, label = f'{model_list[idx]} (AUC: {roc_auc_list[idx]:.2f})')
+#Print each loan status (0 for non default and 1 for default)
+print(preds_df["loan_status"].value_counts()) 
+
+target_names = ['Non-Default', 'Default'] 
+print(classification_report(y_test, preds_df["loan_status"], target_names=target_names)) 
+
+#Confusion matrix of actual vs predicted values
+cm = confusion_matrix(y_test, preds_df['loan_status']) 
+
+class_names = ['Non-Default', 'Default']
+
+#Display the confusion matrix
+display_cm = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)  # Configure the display
+display_cm.plot()  
+plt.show()
+
+#Get probabilities of the positive class
+prob_default = preds[:, 1]
+
+#Calculate roc metrics
+fallout, sensitivity, thresholds = roc_curve(y_test, prob_default)
+
+#Calculate area under auc curve
+roc_auc = roc_auc_score(y_test, prob_default)
+
+plt.plot(fallout, sensitivity,
+            linewidth = 2.5, label = f'AUC: {roc_auc:.2f}')
     
 #Plot the diagnol line
 plt.plot([0,1], [0,1], linestyle = '--', color = 'black', label = 'Random Classifier')
@@ -251,7 +180,17 @@ plt.tight_layout()
 
 plt.show()
 
-"""
-Voting Classifier and Random Forest Classifier stand out as the two best models.
-XGB would've done better than those two if all the categorical columns had been one-hot encoded. 
-"""
+explainer = shap.TreeExplainer(xgb_clf)
+
+shap_values = explainer.shap_values(x_test)
+
+feature_names = x.columns
+
+print(feature_names)
+
+#Shows the mean absolute value for each feature
+shap.summary_plot(shap_values, x_test, plot_type = 'bar', feature_names = feature_names)
+plt.show()
+
+shap.summary_plot(shap_values, x_test, feature_names = feature_names)
+plt.show()

@@ -8,7 +8,6 @@ import xgboost as xgb
 import numpy as np
 import shap
 from imblearn.over_sampling import ADASYN
-from imblearn.ensemble import BalancedBaggingClassifier
 
 """
 Find outliers using the z score
@@ -44,15 +43,6 @@ outliers = find_outliers_zscore(num_df)
 
 for key in outliers.keys():
     num_outliers = len(outliers[key])
-    
-"""
-person_age: 558
-person_income: 233
-loan_amnt: 336
-loan_percent_income: 335
-cb_person_cred_hist_length: 283
-Rest have none
-"""
 
 pd.crosstab(df["loan_status"], df["person_home_ownership"], values = df["person_emp_length"], aggfunc="max")
 
@@ -64,12 +54,6 @@ df = df.drop(df[df["person_age"] > 100].index)
 
 #Getting count of null value for each column
 total_null_values = df.isnull().sum()
-
-"""
-loan interest rate has a lot of null values (3115) and
-so does person_emp_length (895) while the rest have no null
-values
-"""
 
 #Replace all null value with median value for employment length column
 df["person_emp_length"] = df["person_emp_length"].fillna(df["person_emp_length"].median())
@@ -107,6 +91,17 @@ y_train_1d = np.ravel(y_train)
 #Oversample default to deal with the imbalance between default and non-default
 adasyn = ADASYN(random_state=42)
 x_train_over, y_train_over = adasyn.fit_resample(x_train, y_train_1d)
+
+#Hyperparameters
+params = {
+    "n_estimators": [50, 100, 150, 200, 250, 300],
+    "max_depth": [3, 5, 7, 9],
+    "learning_rate": [0.01, 0.05, 0.1, 0.4, 0.3, 0.5],
+    "subsample": [0.7, 0.8, 1.0],
+    "colsample_bytree": [0.7, 0.8, 1.0],
+    "reg_alpha": [0, 0.5, 1],
+    "reg_lambda": [1, 2, 3, 4, 5]
+}
 
 #Creating classifier model
 xgb_clf = xgb.XGBClassifier()

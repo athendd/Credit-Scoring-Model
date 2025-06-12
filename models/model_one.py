@@ -1,18 +1,14 @@
-import sklearn
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split, cross_val_score, KFold
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay, RocCurveDisplay, auc, roc_curve, classification_report, precision_recall_fscore_support
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay, roc_curve, classification_report
 import xgboost as xgb
-from sklearn.preprocessing import StandardScaler
 import numpy as np
 import shap
+from imblearn.over_sampling import ADASYN
+from imblearn.ensemble import BalancedBaggingClassifier
 
 """
 Find outliers using the z score
@@ -105,35 +101,26 @@ y = df[["loan_status"]]
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.3, random_state = 42)
 
-#Standardize the training and testing datasets
-scaler = StandardScaler()
+#Flatten y_train into a 1d array
+y_train_1d = np.ravel(y_train)
 
-x_train_st = scaler.fit_transform(x_train)
-x_test_st = scaler.fit_transform(x_test)
+#Oversample default to deal with the imbalance between default and non-default
+adasyn = ADASYN(random_state=42)
+x_train_over, y_train_over = adasyn.fit_resample(x_train, y_train_1d)
 
 #Creating classifier model
 xgb_clf = xgb.XGBClassifier()
-
-
-#Fit data to each classification model, flatten y_train into a 1d array, and evaluate each model
-xgb_clf.fit(x_train_st, np.ravel(y_train))
-y_pred = xgb_clf.predict(x_test_st)
+                
+#Fit data to each classification model  and evaluate each model
+xgb_clf.fit(x_train_over, y_train_over)
+y_pred = xgb_clf.predict(x_test)
 print(f"The {xgb_clf.__class__.__name__} has an Accuracy: {accuracy_score(y_test, y_pred):.4f} , and a Precision of: {precision_score(y_test, y_pred):.4f} ")
 
-"""
-XGB: 0.89, 0.84 which are both good
-"""
+threshold = 0.5
 
-#Contains probabilities and predictions for each model
-
-    
-xgb_clf.fit(x_train_st, np.ravel(y_train))
-
-preds = xgb_clf.predict_proba(x_test_st)
+preds = xgb_clf.predict_proba(x_test)
 
 preds_df = pd.DataFrame(preds[:, 1], columns = ['prob_default'])
-
-threshold = 0.5
 
 #Assign loan status based on threshold
 preds_df["loan_status"] = preds_df["prob_default"].apply(lambda x: 1 if x > threshold else 0)
@@ -150,7 +137,7 @@ cm = confusion_matrix(y_test, preds_df['loan_status'])
 class_names = ['Non-Default', 'Default']
 
 #Display the confusion matrix
-display_cm = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)  # Configure the display
+display_cm = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
 display_cm.plot()  
 plt.show()
 
@@ -180,6 +167,8 @@ plt.tight_layout()
 
 plt.show()
 
+"""
+
 explainer = shap.TreeExplainer(xgb_clf)
 
 shap_values = explainer.shap_values(x_test)
@@ -194,3 +183,4 @@ plt.show()
 
 shap.summary_plot(shap_values, x_test, feature_names = feature_names)
 plt.show()
+"""

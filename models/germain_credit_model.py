@@ -6,8 +6,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score, RandomizedSearchCV, StratifiedKFold
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix, ConfusionMatrixDisplay, PrecisionRecallDisplay, RocCurveDisplay, auc, roc_curve, classification_report, precision_recall_fscore_support, make_scorer
 import xgboost as xgb
-from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import SMOTE, BorderlineSMOTE, ADASYN
+from imblearn.over_sampling import BorderlineSMOTE
 
 """
 Find outliers using the z score

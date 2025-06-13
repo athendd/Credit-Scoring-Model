@@ -69,15 +69,8 @@ df = pd.get_dummies(df, columns = ["person_home_ownership", "cb_person_default_o
 #Checking the correlation between each column in the dataframe
 correlation_matrix = df.corr()
 
-"""
 sns.heatmap(correlation_matrix, annot = True, cmap = 'coolwarm', fmt = '.2f')
 plt.show()
-"""
-
-"""
-strong positive correlations: person_age and cb_person_cred_hist_length
-strong negative correlations: loan_int_rate and loan_grade_oridanl, home_ownership_MORTGAGE and home_ownership_RENT 
-"""
 
 #Creating training and testing datasets
 x = df.drop("loan_status", axis = 1)
@@ -162,8 +155,6 @@ plt.tight_layout()
 
 plt.show()
 
-"""
-
 explainer = shap.TreeExplainer(xgb_clf)
 
 shap_values = explainer.shap_values(x_test)
@@ -178,4 +169,3 @@ plt.show()
 
 shap.summary_plot(shap_values, x_test, feature_names = feature_names)
 plt.show()
-"""

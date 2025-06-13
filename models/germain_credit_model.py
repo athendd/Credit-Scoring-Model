@@ -28,39 +28,23 @@ df = df[['Duration_in_month', 'Credit_amount', 'Status_of_existing_checking_acco
          'Other_debtors/guarantors', 'credit_risk']]
 
 num_df = df.select_dtypes(include = 'number')
-
-"""
-Number of Outliers in each Numerical Column
-    Duration_in_month: 14
-    Credit_amount: 25
-    Installment_rate_in_percentage_of_disposable_income: 0
-    Age_in_years: 7
-"""
+    
 outliers = find_outliers_zscore(num_df)
 
-#Checked age to see if outliers are really outliers
-#print(max(df['Age_in_years']))
-
-"""
 sns.violinplot(y = df['Duration_in_month'])
 plt.show()
-"""
 
 #Removed extreme outliers from Duration_in_month
 df = df.drop(df[df['Duration_in_month'] > 60].index)
 
-"""
 sns.violinplot(y = df['Credit_amount'])
 plt.show()
-"""
 
 #Removed extreme outliers from Credit_amount
 df = df.drop(df[df['Credit_amount'] > 17000].index)
 
-"""
 sns.violinplot(y = df['Installment_rate_in_percentage_of_disposable_income'])
 plt.show()
-"""
 
 #Obtained total null values for each column
 total_null_values = df.isnull().sum()
@@ -70,13 +54,11 @@ df = pd.get_dummies(df, columns = ['Status_of_existing_checking_account', 'Credi
                     'Savings_account/bonds', 'Purpose', 'Property', 'Present_employment_since',
                     'Housing', 'Other_installment_plans', 'Other_debtors/guarantors'])
 
-"""
 #Checked the correlation between each column
 correlation_matrix = df.corr()
 
 sns.heatmap(correlation_matrix, annot = True, cmap = 'coolwarm', fmt = '.2f')
 plt.show()
-"""
 
 #Created training and testing datasets
 x = df.drop('credit_risk', axis = 1)
@@ -118,8 +100,8 @@ search = RandomizedSearchCV(xgb.XGBClassifier(), param_distributions=params,
 search.fit(x_train_res, y_train_res)
 y_pred = search.predict(x_test)
 
-#print(f'Accuracy: {accuracy_score(y_test, y_pred):.4f}')
-#print(f'Precision: {precision_score(y_test, y_pred):.4f}')
+print(f'Accuracy: {accuracy_score(y_test, y_pred):.4f}')
+print(f'Precision: {precision_score(y_test, y_pred):.4f}')
 
 preds = search.predict_proba(x_test)
 preds_df = pd.DataFrame(preds[:, 1], columns = ['prob_default'])

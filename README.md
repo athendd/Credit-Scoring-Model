@@ -70,3 +70,27 @@ Applying robust machine learning techniques in financial risk contexts.
 Interpreting model results using comprehensive evaluation metrics.
 
 # Results
+
+Confusion Matrix:
+![fhads](https://github.com/user-attachments/assets/e5fa7d80-ea01-42c4-b78d-fc0db944d9c8)
+
+Roc Auc Curve:
+![fadac](https://github.com/user-attachments/assets/b37243ec-3b4e-4e36-b45d-e4000e442bef)
+
+Sharp Graph:
+![afds](https://github.com/user-attachments/assets/f211080a-4494-412d-ad03-e053ddf4fe51)
+
+Output From Model One:
+![image](https://github.com/user-attachments/assets/5fb1f527-7657-4412-8d18-5b736dfa94a0)
+
+Additional Plots for Analysis:
+![fdc](https://github.com/user-attachments/assets/e0375ff4-6045-4934-93fa-dd83c5e1c33b)
+![dadc](https://github.com/user-attachments/assets/ecc9f611-0581-4139-a03a-f5627595c7ee)
+![dacse](https://github.com/user-attachments/assets/726ee546-138b-42b7-b445-912f0ee90ecd)
+
+
+
+
+
+
+
